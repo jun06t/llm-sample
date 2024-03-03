@@ -2,7 +2,9 @@ import streamlit as st
 from langchain_openai import ChatOpenAI
 from langchain.memory import ConversationBufferMemory
 from langchain.prompts import MessagesPlaceholder, ChatPromptTemplate
-from langchain.chains import ConversationChain
+from langchain.agents import create_openai_functions_agent, AgentExecutor
+from langchain.tools import Tool
+from langchain_community.tools import DuckDuckGoSearchRun
 from langchain.globals import set_debug, set_verbose
 
 set_verbose(True) # フォーマットされたプロンプトなどが表示される
@@ -14,32 +16,40 @@ system_prompt = """
 あなたはAIエージェントです。
 """
 
-def create_chain():
+def create_agent():
     chat = ChatOpenAI(
         model_name="gpt-3.5-turbo",
     )
-    # OpenAI Functions AgentのプロンプトにMemoryの会話履歴を追加するための設定
     prompt = ChatPromptTemplate.from_messages(
         [
             ("system", system_prompt),
             MessagesPlaceholder(variable_name="history"),
             ("user", "{input}"),
+            MessagesPlaceholder(variable_name="agent_scratchpad"),
         ]
     )
+    search = DuckDuckGoSearchRun()
+    tools = [
+        Tool(
+            name="duckduckgo-search",
+            func=search.run,
+            description="最新の情報を取得したい時に使うWeb検索ツールです。",
+        )
+    ]
 
-    # OpenAI Functions Agentが使える設定でMemoryを初期化
+    agent = create_openai_functions_agent(chat, tools, prompt)
     memory = ConversationBufferMemory(return_messages=True)
-    chain = ConversationChain(
-      llm=chat,
-      prompt=prompt,
-      memory=memory,
+
+    return AgentExecutor(
+        agent=agent, 
+        tools=tools, 
+        memory=memory,
+        verbose=True,
     )
 
-    return chain
-
 # 一度だけ初期化。セッションで保持しないと毎回初期化されてしまう
-if "chain" not in st.session_state:
-    st.session_state.chain = create_chain()
+if "agent" not in st.session_state:
+    st.session_state.agent = create_agent()
 
 # 会話履歴の初期化
 if "messages" not in st.session_state:
@@ -56,8 +66,9 @@ if prompt := st.chat_input("Message to chatbot"):
     st.session_state.messages.append({"role": "user", "content": prompt})
     
     # チャットの実行
-    response = st.session_state.chain.invoke({"input": prompt})
+    response = st.session_state.agent.invoke({"input": prompt})
+    output = response["output"]
     with st.chat_message("system"):
-        st.markdown(response["response"])
-    st.session_state.messages.append({"role": "assistant", "content": response["response"]})
+        st.markdown(output)
+    st.session_state.messages.append({"role": "assistant", "content": output})
 

@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "memory"
+version = "0.1.0"
+description = ""
+authors = ["Junpei Tsuji <junpei.tsuji.ams@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+streamlit = "^1.31.1"
+langchain-openai = "^0.0.8"
+langchain = "^0.1.9"
+duckduckgo-search = "^4.5.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
