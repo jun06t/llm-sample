@@ -3,11 +3,15 @@ from langchain_openai import ChatOpenAI
 from langchain.memory import ConversationBufferMemory
 from langchain.prompts import MessagesPlaceholder, ChatPromptTemplate
 from langchain.chains import ConversationChain
+from langchain.globals import set_debug, set_verbose
+
+set_verbose(True) # フォーマットされたプロンプトなどが表示される
+set_debug(True)   # LangChainの挙動が最も詳細に出力される
 
 st.title("OpenAI Chat")
 
 system_prompt = """
-あなたはAIアシスタントです。
+あなたはAIエージェントです。
 """
 
 def create_chain():
@@ -27,6 +31,7 @@ def create_chain():
     memory = ConversationBufferMemory(memory_key="history", return_messages=True)
     chain = ConversationChain(
       llm=chat,
+      prompt=prompt,
       memory=memory,
     )
 
@@ -51,7 +56,8 @@ if prompt := st.chat_input("Message to chatbot"):
     st.session_state.messages.append({"role": "user", "content": prompt})
     
     # チャットの実行
-    response = st.session_state.chain(prompt)
+    response = st.session_state.chain.invoke({"input": prompt})
     with st.chat_message("system"):
         st.markdown(response["response"])
     st.session_state.messages.append({"role": "assistant", "content": response["response"]})
+
