@@ -67,7 +67,7 @@ if prompt := st.chat_input("Message to chatbot"):
     
     # チャットの実行
     response = st.session_state.agent.invoke({"input": prompt})
-    output = response["output"]
+    output = response["output"] # agentではresponseでなくoutput
     with st.chat_message("system"):
         st.markdown(output)
     st.session_state.messages.append({"role": "assistant", "content": output})
